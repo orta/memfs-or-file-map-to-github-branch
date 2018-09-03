@@ -1,0 +1,17 @@
+{
+  "name": "memfs-or-file-map-to-github-branch",
+  "version": "1.0.0",
+  "description": "Handles making a GitHub branch with the commits from a memfs instance or a file map",
+  "main": "build/index.js",
+  "typings": "build/index.d.ts",
+  "repository": "https://github.com/orta/memfs-or-file-map-to-github-branch",
+  "author": "orta",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "typescript": "^3.0.3"
+  },
+  "dependencies": {
+    "@octokit/rest": "*"
+  }
+}

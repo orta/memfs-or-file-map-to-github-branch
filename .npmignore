@@ -1,0 +1,6 @@
+index.ts
+ambient.d.ts
+tsconfig.json
+yarn-error.log
+yarn.lock
+.vscode
