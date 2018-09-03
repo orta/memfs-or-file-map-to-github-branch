@@ -9,13 +9,18 @@ const settings = {
   fullBranchReference: "heads/a_new_branch",
   message: "Adds some new stuff"
 }
-await filepathContentsMapToUpdateGitHubBranch(api, { README: "### My README" }, settings)
+await filepathContentsMapToUpdateGitHubBranch(api, { "README.md": "### My README" }, settings)
 ```
+
+and it will make a branch on that repo with those new file contents.
+
+---
 
 Full Reference:
 
 ```ts
 import * as GitHub from "@octokit/rest"
+
 interface RepoSettings {
   /** The danger in danger/danger-js */
   owner: string
