@@ -9,6 +9,8 @@ interface RepoSettings {
   owner: string
   /** The danger-js in danger/danger-js */
   repo: string
+  /** Base branch to start working from, null is implied to be `heads/master` */
+  fullBaseBranch: string
   /** The ref in the URL must `heads/branch`, not just `branch`. */
   fullBranchReference: string
   /** Message for the commit */
@@ -47,7 +49,7 @@ const shaForBranch = async (api: GitHub, settings: RepoSettings) =>
   api.gitdata.getReference({
     owner: settings.owner,
     repo: settings.repo,
-    ref: settings.fullBranchReference
+    ref: settings.fullBaseBranch || "heads/master"
   })
 
 /**
