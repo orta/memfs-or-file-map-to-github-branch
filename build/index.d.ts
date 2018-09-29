@@ -29,13 +29,13 @@ export declare const filepathContentsMapToUpdateGitHubBranch: (api: GitHub, file
  *
  * https://developer.github.com/v3/git/trees/
  */
-export declare const createTree: (api: GitHub, settings: RepoSettings) => (fileMap: FileMap) => Promise<GitHub.CreateTreeResponse>;
+export declare const createTree: (api: GitHub, settings: RepoSettings) => (fileMap: FileMap) => Promise<GitHub.GitdataCreateTreeResponse>;
 /**
  * A Git commit is a snapshot of the hierarchy (Git tree) and the contents of the files (Git blob) in a Git repository
  *
  * https://developer.github.com/v3/git/commits/
  */
-export declare const createACommit: (api: GitHub, settings: RepoSettings) => (treeSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.CreateCommitResponse>>;
+export declare const createACommit: (api: GitHub, settings: RepoSettings) => (treeSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.GitdataCreateCommitResponse>>;
 /**
  * A Git reference (git ref) is just a file that contains a Git commit SHA-1 hash. When referring
  * to a Git commit, you can use the Git reference, which is an easy-to-remember name, rather than
@@ -43,5 +43,5 @@ export declare const createACommit: (api: GitHub, settings: RepoSettings) => (tr
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export declare const updateReference: (api: GitHub, settings: RepoSettings) => (newSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.UpdateReferenceResponse>>;
+export declare const updateReference: (api: GitHub, settings: RepoSettings) => (newSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.GitdataUpdateReferenceResponse>>;
 export {};
