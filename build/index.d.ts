@@ -7,6 +7,8 @@ interface RepoSettings {
     owner: string;
     /** The danger-js in danger/danger-js */
     repo: string;
+    /** Base branch to start working from, null is implied to be `heads/master` */
+    fullBaseBranch?: string;
     /** The ref in the URL must `heads/branch`, not just `branch`. */
     fullBranchReference: string;
     /** Message for the commit */
@@ -27,9 +29,11 @@ export declare const filepathContentsMapToUpdateGitHubBranch: (api: GitHub, file
  * A Git tree object creates the hierarchy between files in a Git repository. To create a tree
  * we need to make a list of blobs (which represent changes to the FS)
  *
+ * We want to build on top of the tree that already exists at the last sha
+ *
  * https://developer.github.com/v3/git/trees/
  */
-export declare const createTree: (api: GitHub, settings: RepoSettings) => (fileMap: FileMap) => Promise<GitHub.GitdataCreateTreeResponse>;
+export declare const createTree: (api: GitHub, settings: RepoSettings) => (fileMap: FileMap, baseSha: string) => Promise<GitHub.GitdataCreateTreeResponse>;
 /**
  * A Git commit is a snapshot of the hierarchy (Git tree) and the contents of the files (Git blob) in a Git repository
  *
@@ -43,5 +47,5 @@ export declare const createACommit: (api: GitHub, settings: RepoSettings) => (tr
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export declare const updateReference: (api: GitHub, settings: RepoSettings) => (newSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.GitdataUpdateReferenceResponse>>;
+export declare const updateReference: (api: GitHub, settings: RepoSettings) => (newSha: string) => Promise<GitHub.Response<GitHub.GitdataCreateReferenceResponse>>;
 export {};

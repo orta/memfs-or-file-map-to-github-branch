@@ -10,7 +10,7 @@ interface RepoSettings {
   /** The danger-js in danger/danger-js */
   repo: string
   /** Base branch to start working from, null is implied to be `heads/master` */
-  fullBaseBranch: string
+  fullBaseBranch?: string
   /** The ref in the URL must `heads/branch`, not just `branch`. */
   fullBranchReference: string
   /** Message for the commit */
@@ -39,9 +39,9 @@ export const filepathContentsMapToUpdateGitHubBranch = async (
 ) => {
   const getSha = await shaForBranch(api, settings)
   const baseSha = getSha.data.object.sha
-  const tree = await createTree(api, settings)(fileMap)
+  const tree = await createTree(api, settings)(fileMap, baseSha)
   const commit = await createACommit(api, settings)(tree.sha, baseSha)
-  await updateReference(api, settings)(commit.data.sha, baseSha)
+  await updateReference(api, settings)(commit.data.sha)
 }
 
 /** If we want to make a commit, or update a reference, we'll need the original commit */
@@ -56,9 +56,11 @@ const shaForBranch = async (api: GitHub, settings: RepoSettings) =>
  * A Git tree object creates the hierarchy between files in a Git repository. To create a tree
  * we need to make a list of blobs (which represent changes to the FS)
  *
+ * We want to build on top of the tree that already exists at the last sha
+ *
  * https://developer.github.com/v3/git/trees/
  */
-export const createTree = (api: GitHub, settings: RepoSettings) => async (fileMap: FileMap) => {
+export const createTree = (api: GitHub, settings: RepoSettings) => async (fileMap: FileMap, baseSha: string) => {
   const blobSettings = { owner: settings.owner, repo: settings.repo }
   const createBlobs = Object.keys(fileMap).map(filename =>
     api.gitdata.createBlob({ ...blobSettings, content: fileMap[filename] }).then((blob: any) => ({
@@ -70,7 +72,7 @@ export const createTree = (api: GitHub, settings: RepoSettings) => async (fileMa
   )
 
   const blobs = await Promise.all(createBlobs)
-  const tree = await api.gitdata.createTree({ ...blobSettings, tree: blobs as any })
+  const tree = await api.gitdata.createTree({ ...blobSettings, tree: blobs as any, base_tree: baseSha })
   return tree.data
 }
 
@@ -95,10 +97,25 @@ export const createACommit = (api: GitHub, settings: RepoSettings) => (treeSha: 
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export const updateReference = (api: GitHub, settings: RepoSettings) => (newSha: string, parentSha: string) =>
-  api.gitdata.updateReference({
+export const updateReference = (api: GitHub, settings: RepoSettings) => async (newSha: string) => {
+  const refSettings = {
     owner: settings.owner,
     repo: settings.repo,
-    ref: settings.fullBranchReference,
-    sha: newSha
-  })
+    ref: `refs/${settings.fullBranchReference}`
+  }
+  try {
+    await api.gitdata.getReference(refSettings)
+
+    // It must exist, so we should update it
+    return api.gitdata.createReference({
+      ...refSettings,
+      sha: newSha
+    })
+  } catch (error) {
+    // We have to create the reference because it doesn't exist yet
+    return api.gitdata.createReference({
+      ...refSettings,
+      sha: newSha
+    })
+  }
+}

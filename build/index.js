@@ -21,25 +21,27 @@ exports.memFSToGitHubCommits = (api, volume, settings) => __awaiter(this, void 0
 exports.filepathContentsMapToUpdateGitHubBranch = (api, fileMap, settings) => __awaiter(this, void 0, void 0, function* () {
     const getSha = yield shaForBranch(api, settings);
     const baseSha = getSha.data.object.sha;
-    const tree = yield exports.createTree(api, settings)(fileMap);
+    const tree = yield exports.createTree(api, settings)(fileMap, baseSha);
     const commit = yield exports.createACommit(api, settings)(tree.sha, baseSha);
-    yield exports.updateReference(api, settings)(commit.data.sha, baseSha);
+    yield exports.updateReference(api, settings)(commit.data.sha);
 });
 /** If we want to make a commit, or update a reference, we'll need the original commit */
 const shaForBranch = (api, settings) => __awaiter(this, void 0, void 0, function* () {
     return api.gitdata.getReference({
         owner: settings.owner,
         repo: settings.repo,
-        ref: settings.fullBranchReference
+        ref: settings.fullBaseBranch || "heads/master"
     });
 });
 /**
  * A Git tree object creates the hierarchy between files in a Git repository. To create a tree
  * we need to make a list of blobs (which represent changes to the FS)
  *
+ * We want to build on top of the tree that already exists at the last sha
+ *
  * https://developer.github.com/v3/git/trees/
  */
-exports.createTree = (api, settings) => (fileMap) => __awaiter(this, void 0, void 0, function* () {
+exports.createTree = (api, settings) => (fileMap, baseSha) => __awaiter(this, void 0, void 0, function* () {
     const blobSettings = { owner: settings.owner, repo: settings.repo };
     const createBlobs = Object.keys(fileMap).map(filename => api.gitdata.createBlob(Object.assign({}, blobSettings, { content: fileMap[filename] })).then((blob) => ({
         sha: blob.data.sha,
@@ -48,7 +50,7 @@ exports.createTree = (api, settings) => (fileMap) => __awaiter(this, void 0, voi
         type: "blob"
     })));
     const blobs = yield Promise.all(createBlobs);
-    const tree = yield api.gitdata.createTree(Object.assign({}, blobSettings, { tree: blobs }));
+    const tree = yield api.gitdata.createTree(Object.assign({}, blobSettings, { tree: blobs, base_tree: baseSha }));
     return tree.data;
 });
 /**
@@ -70,9 +72,19 @@ exports.createACommit = (api, settings) => (treeSha, parentSha) => api.gitdata.c
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-exports.updateReference = (api, settings) => (newSha, parentSha) => api.gitdata.updateReference({
-    owner: settings.owner,
-    repo: settings.repo,
-    ref: settings.fullBranchReference,
-    sha: newSha
+exports.updateReference = (api, settings) => (newSha) => __awaiter(this, void 0, void 0, function* () {
+    const refSettings = {
+        owner: settings.owner,
+        repo: settings.repo,
+        ref: `refs/${settings.fullBranchReference}`
+    };
+    try {
+        yield api.gitdata.getReference(refSettings);
+        // It must exist, so we should update it
+        return api.gitdata.createReference(Object.assign({}, refSettings, { sha: newSha }));
+    }
+    catch (error) {
+        // We have to create the reference because it doesn't exist yet
+        return api.gitdata.createReference(Object.assign({}, refSettings, { sha: newSha }));
+    }
 });
