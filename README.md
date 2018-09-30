@@ -6,9 +6,11 @@ e.g. this:
 const settings = {
   owner: "danger",
   repo: "danger-js",
-  fullBranchReference: "heads/a_new_branch",
+  fullBranchReference: "heads/new_readme",
   message: "Adds some new stuff"
 }
+
+// This will make a make a new commit on the branch new_readme, changing README.md
 await filepathContentsMapToUpdateGitHubBranch(api, { "README.md": "### My README" }, settings)
 ```
 
@@ -16,14 +18,16 @@ and it will make a branch on that repo with those new file contents.
 
 ---
 
-Full Reference:
+## Full API Reference
 
 ```ts
-import * as GitHub from "@octokit/rest"
-interface MemFSVolume {
-  toJSON(): any
-}
-interface RepoSettings {
+/**
+ * The config for creating a branch. Noting the repo,
+ * base branch (what should it work from), the new branch
+ * and the message for the generated commit. The commit's
+ * author will be whomever the API is authenticated with.
+ */
+export interface BranchCreationConfig {
   /** The danger in danger/danger-js */
   owner: string
   /** The danger-js in danger/danger-js */
@@ -35,20 +39,25 @@ interface RepoSettings {
   /** Message for the commit */
   message: string
 }
+/** Basically a filename to file contents map */
 interface FileMap {
   [filename: string]: string
 }
 /**
  * Creates a bunch of blobs, wraps them in a tree, updates a reference from a memfs volume
  */
-export declare const memFSToGitHubCommits: (api: GitHub, volume: MemFSVolume, settings: RepoSettings) => Promise<void>
+export declare const memFSToGitHubCommits: (
+  api: GitHub,
+  volume: MemFSVolume,
+  settings: BranchCreationConfig
+) => Promise<void>
 /**
  * Creates a bunch of blobs, wraps them in a tree, updates a reference from a map of files to contents
  */
 export declare const filepathContentsMapToUpdateGitHubBranch: (
   api: GitHub,
   fileMap: FileMap,
-  settings: RepoSettings
+  settings: BranchCreationConfig
 ) => Promise<void>
 /**
  * A Git tree object creates the hierarchy between files in a Git repository. To create a tree
@@ -60,7 +69,7 @@ export declare const filepathContentsMapToUpdateGitHubBranch: (
  */
 export declare const createTree: (
   api: GitHub,
-  settings: RepoSettings
+  settings: BranchCreationConfig
 ) => (fileMap: FileMap, baseSha: string) => Promise<GitHub.GitdataCreateTreeResponse>
 /**
  * A Git commit is a snapshot of the hierarchy (Git tree) and the contents of the files (Git blob) in a Git repository
@@ -69,7 +78,7 @@ export declare const createTree: (
  */
 export declare const createACommit: (
   api: GitHub,
-  settings: RepoSettings
+  settings: BranchCreationConfig
 ) => (treeSha: string, parentSha: string) => Promise<GitHub.Response<GitHub.GitdataCreateCommitResponse>>
 /**
  * A Git reference (git ref) is just a file that contains a Git commit SHA-1 hash. When referring
@@ -80,6 +89,7 @@ export declare const createACommit: (
  */
 export declare const updateReference: (
   api: GitHub,
-  settings: RepoSettings
-) => (newSha: string) => Promise<GitHub.Response<GitHub.GitdataCreateReferenceResponse> | undefined>
+  settings: BranchCreationConfig
+) => (newSha: string) => Promise<GitHub.Response<GitHub.GitdataCreateReferenceResponse>>
+export {}
 ```

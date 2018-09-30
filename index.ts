@@ -4,7 +4,13 @@ interface MemFSVolume {
   toJSON(): any
 }
 
-interface RepoSettings {
+/**
+ * The config for creating a branch. Noting the repo,
+ * base branch (what should it work from), the new branch
+ * and the message for the generated commit. The commit's
+ * author will be whomever the API is authenticated with.
+ */
+export interface BranchCreationConfig {
   /** The danger in danger/danger-js */
   owner: string
   /** The danger-js in danger/danger-js */
@@ -17,6 +23,7 @@ interface RepoSettings {
   message: string
 }
 
+/** Basically a filename to file contents map */
 interface FileMap {
   [filename: string]: string
 }
@@ -24,7 +31,7 @@ interface FileMap {
 /**
  * Creates a bunch of blobs, wraps them in a tree, updates a reference from a memfs volume
  */
-export const memFSToGitHubCommits = async (api: GitHub, volume: MemFSVolume, settings: RepoSettings) => {
+export const memFSToGitHubCommits = async (api: GitHub, volume: MemFSVolume, settings: BranchCreationConfig) => {
   const fileMap: FileMap = volume.toJSON()
   return filepathContentsMapToUpdateGitHubBranch(api, fileMap, settings)
 }
@@ -35,7 +42,7 @@ export const memFSToGitHubCommits = async (api: GitHub, volume: MemFSVolume, set
 export const filepathContentsMapToUpdateGitHubBranch = async (
   api: GitHub,
   fileMap: FileMap,
-  settings: RepoSettings
+  settings: BranchCreationConfig
 ) => {
   const getSha = await shaForBranch(api, settings)
   const baseSha = getSha.data.object.sha
@@ -45,7 +52,7 @@ export const filepathContentsMapToUpdateGitHubBranch = async (
 }
 
 /** If we want to make a commit, or update a reference, we'll need the original commit */
-const shaForBranch = async (api: GitHub, settings: RepoSettings) =>
+const shaForBranch = async (api: GitHub, settings: BranchCreationConfig) =>
   api.gitdata.getReference({
     owner: settings.owner,
     repo: settings.repo,
@@ -60,7 +67,10 @@ const shaForBranch = async (api: GitHub, settings: RepoSettings) =>
  *
  * https://developer.github.com/v3/git/trees/
  */
-export const createTree = (api: GitHub, settings: RepoSettings) => async (fileMap: FileMap, baseSha: string) => {
+export const createTree = (api: GitHub, settings: BranchCreationConfig) => async (
+  fileMap: FileMap,
+  baseSha: string
+) => {
   const blobSettings = { owner: settings.owner, repo: settings.repo }
   const createBlobs = Object.keys(fileMap).map(filename =>
     api.gitdata.createBlob({ ...blobSettings, content: fileMap[filename] }).then((blob: any) => ({
@@ -81,7 +91,7 @@ export const createTree = (api: GitHub, settings: RepoSettings) => async (fileMa
  *
  * https://developer.github.com/v3/git/commits/
  */
-export const createACommit = (api: GitHub, settings: RepoSettings) => (treeSha: string, parentSha: string) =>
+export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (treeSha: string, parentSha: string) =>
   api.gitdata.createCommit({
     owner: settings.owner,
     repo: settings.repo,
@@ -97,7 +107,7 @@ export const createACommit = (api: GitHub, settings: RepoSettings) => (treeSha: 
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export const updateReference = (api: GitHub, settings: RepoSettings) => async (newSha: string) => {
+export const updateReference = (api: GitHub, settings: BranchCreationConfig) => async (newSha: string) => {
   const refSettings = {
     owner: settings.owner,
     repo: settings.repo,
