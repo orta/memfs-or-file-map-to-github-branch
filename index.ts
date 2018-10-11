@@ -70,7 +70,7 @@ const shaForBranch = async (api: GitHub, settings: BranchCreationConfig) =>
 export const createTree = (api: GitHub, settings: BranchCreationConfig) => async (
   fileMap: FileMap,
   baseSha: string
-) => {
+): Promise<any> => {
   const blobSettings = { owner: settings.owner, repo: settings.repo }
   const createBlobs = Object.keys(fileMap).map(filename =>
     api.gitdata.createBlob({ ...blobSettings, content: fileMap[filename] }).then((blob: any) => ({
@@ -91,7 +91,10 @@ export const createTree = (api: GitHub, settings: BranchCreationConfig) => async
  *
  * https://developer.github.com/v3/git/commits/
  */
-export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (treeSha: string, parentSha: string) =>
+export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (
+  treeSha: string,
+  parentSha: string
+): Promise<any> =>
   api.gitdata.createCommit({
     owner: settings.owner,
     repo: settings.repo,
@@ -107,7 +110,9 @@ export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (t
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export const updateReference = (api: GitHub, settings: BranchCreationConfig) => async (newSha: string) => {
+export const updateReference = (api: GitHub, settings: BranchCreationConfig) => async (
+  newSha: string
+): Promise<any> => {
   const refSettings = {
     owner: settings.owner,
     repo: settings.repo,

@@ -1,6 +1,6 @@
 {
   "name": "memfs-or-file-map-to-github-branch",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Handles making a GitHub branch with the commits from a memfs instance or a file map",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
