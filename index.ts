@@ -1,4 +1,4 @@
-import * as GitHub from "@octokit/rest"
+import { Octokit } from "@octokit/rest"
 
 interface MemFSVolume {
   toJSON(): any
@@ -31,7 +31,7 @@ interface FileMap {
 /**
  * Creates a bunch of blobs, wraps them in a tree, updates a reference from a memfs volume
  */
-export const memFSToGitHubCommits = async (api: GitHub, volume: MemFSVolume, settings: BranchCreationConfig) => {
+export const memFSToGitHubCommits = async (api: Octokit, volume: MemFSVolume, settings: BranchCreationConfig) => {
   const fileMap: FileMap = volume.toJSON()
   return filepathContentsMapToUpdateGitHubBranch(api, fileMap, settings)
 }
@@ -40,7 +40,7 @@ export const memFSToGitHubCommits = async (api: GitHub, volume: MemFSVolume, set
  * Creates a bunch of blobs, wraps them in a tree, updates a reference from a map of files to contents
  */
 export const filepathContentsMapToUpdateGitHubBranch = async (
-  api: GitHub,
+  api: Octokit,
   fileMap: FileMap,
   settings: BranchCreationConfig
 ) => {
@@ -52,8 +52,8 @@ export const filepathContentsMapToUpdateGitHubBranch = async (
 }
 
 /** If we want to make a commit, or update a reference, we'll need the original commit */
-const shaForBranch = async (api: GitHub, settings: BranchCreationConfig) =>
-  api.gitdata.getReference({
+const shaForBranch = async (api: Octokit, settings: BranchCreationConfig) =>
+  api.git.getRef({
     owner: settings.owner,
     repo: settings.repo,
     ref: settings.fullBaseBranch || "heads/master"
@@ -67,13 +67,13 @@ const shaForBranch = async (api: GitHub, settings: BranchCreationConfig) =>
  *
  * https://developer.github.com/v3/git/trees/
  */
-export const createTree = (api: GitHub, settings: BranchCreationConfig) => async (
+export const createTree = (api: Octokit, settings: BranchCreationConfig) => async (
   fileMap: FileMap,
   baseSha: string
 ): Promise<any> => {
   const blobSettings = { owner: settings.owner, repo: settings.repo }
   const createBlobs = Object.keys(fileMap).map(filename =>
-    api.gitdata.createBlob({ ...blobSettings, content: fileMap[filename] }).then((blob: any) => ({
+    api.git.createBlob({ ...blobSettings, content: fileMap[filename] }).then((blob: any) => ({
       sha: blob.data.sha,
       path: filename,
       mode: "100644",
@@ -82,7 +82,7 @@ export const createTree = (api: GitHub, settings: BranchCreationConfig) => async
   )
 
   const blobs = await Promise.all(createBlobs)
-  const tree = await api.gitdata.createTree({ ...blobSettings, tree: blobs as any, base_tree: baseSha })
+  const tree = await api.git.createTree({ ...blobSettings, tree: blobs as any, base_tree: baseSha })
   return tree.data
 }
 
@@ -91,11 +91,11 @@ export const createTree = (api: GitHub, settings: BranchCreationConfig) => async
  *
  * https://developer.github.com/v3/git/commits/
  */
-export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (
+export const createACommit = (api: Octokit, settings: BranchCreationConfig) => (
   treeSha: string,
   parentSha: string
 ): Promise<any> =>
-  api.gitdata.createCommit({
+  api.git.createCommit({
     owner: settings.owner,
     repo: settings.repo,
     message: settings.message,
@@ -110,7 +110,7 @@ export const createACommit = (api: GitHub, settings: BranchCreationConfig) => (
  *
  * https://developer.github.com/v3/git/refs/#git-references
  */
-export const updateReference = (api: GitHub, settings: BranchCreationConfig) => async (
+export const updateReference = (api: Octokit, settings: BranchCreationConfig) => async (
   newSha: string
 ): Promise<any> => {
   const refSettings = {
@@ -119,16 +119,16 @@ export const updateReference = (api: GitHub, settings: BranchCreationConfig) => 
     ref: `refs/${settings.fullBranchReference}`
   }
   try {
-    await api.gitdata.getReference(refSettings)
+    await api.git.getRef(refSettings)
 
     // It must exist, so we should update it
-    return api.gitdata.createReference({
+    return api.git.createRef({
       ...refSettings,
       sha: newSha
     })
   } catch (error) {
     // We have to create the reference because it doesn't exist yet
-    return api.gitdata.createReference({
+    return api.git.createRef({
       ...refSettings,
       sha: newSha
     })

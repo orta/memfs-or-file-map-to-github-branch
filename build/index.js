@@ -27,7 +27,7 @@ exports.filepathContentsMapToUpdateGitHubBranch = (api, fileMap, settings) => __
 });
 /** If we want to make a commit, or update a reference, we'll need the original commit */
 const shaForBranch = (api, settings) => __awaiter(this, void 0, void 0, function* () {
-    return api.gitdata.getReference({
+    return api.git.getRef({
         owner: settings.owner,
         repo: settings.repo,
         ref: settings.fullBaseBranch || "heads/master"
@@ -43,14 +43,14 @@ const shaForBranch = (api, settings) => __awaiter(this, void 0, void 0, function
  */
 exports.createTree = (api, settings) => (fileMap, baseSha) => __awaiter(this, void 0, void 0, function* () {
     const blobSettings = { owner: settings.owner, repo: settings.repo };
-    const createBlobs = Object.keys(fileMap).map(filename => api.gitdata.createBlob(Object.assign({}, blobSettings, { content: fileMap[filename] })).then((blob) => ({
+    const createBlobs = Object.keys(fileMap).map(filename => api.git.createBlob(Object.assign({}, blobSettings, { content: fileMap[filename] })).then((blob) => ({
         sha: blob.data.sha,
         path: filename,
         mode: "100644",
         type: "blob"
     })));
     const blobs = yield Promise.all(createBlobs);
-    const tree = yield api.gitdata.createTree(Object.assign({}, blobSettings, { tree: blobs, base_tree: baseSha }));
+    const tree = yield api.git.createTree(Object.assign({}, blobSettings, { tree: blobs, base_tree: baseSha }));
     return tree.data;
 });
 /**
@@ -58,7 +58,7 @@ exports.createTree = (api, settings) => (fileMap, baseSha) => __awaiter(this, vo
  *
  * https://developer.github.com/v3/git/commits/
  */
-exports.createACommit = (api, settings) => (treeSha, parentSha) => api.gitdata.createCommit({
+exports.createACommit = (api, settings) => (treeSha, parentSha) => api.git.createCommit({
     owner: settings.owner,
     repo: settings.repo,
     message: settings.message,
@@ -79,12 +79,12 @@ exports.updateReference = (api, settings) => (newSha) => __awaiter(this, void 0,
         ref: `refs/${settings.fullBranchReference}`
     };
     try {
-        yield api.gitdata.getReference(refSettings);
+        yield api.git.getRef(refSettings);
         // It must exist, so we should update it
-        return api.gitdata.createReference(Object.assign({}, refSettings, { sha: newSha }));
+        return api.git.createRef(Object.assign({}, refSettings, { sha: newSha }));
     }
     catch (error) {
         // We have to create the reference because it doesn't exist yet
-        return api.gitdata.createReference(Object.assign({}, refSettings, { sha: newSha }));
+        return api.git.createRef(Object.assign({}, refSettings, { sha: newSha }));
     }
 });
