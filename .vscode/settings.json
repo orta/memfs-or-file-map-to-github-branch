@@ -1,7 +1,5 @@
 {
   "prettier.requireConfig": false,
   "editor.formatOnSave": true,
-  "cSpell.words": [
-    "gitdata"
-  ]
+  "cSpell.words": ["gitdata", "memfs", "orta"]
 }
